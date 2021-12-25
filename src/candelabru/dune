@@ -1,0 +1,3 @@
+(library
+ (name candelabru)
+ (libraries mocaml compiler-libs.common))

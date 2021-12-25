@@ -1,0 +1,4 @@
+(library
+ (name mocaml)
+ (package camldlabre)
+ (libraries pprint compiler-libs.common))
