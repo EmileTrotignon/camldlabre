@@ -7,6 +7,7 @@ type pattern =
   | PInt of int
   | PTuple of pattern list
   | PVar of string
+  | PCons of string * pattern list
   | PPrimitive of primitive
 
 type type_ =

@@ -106,6 +106,8 @@ module Builder : sig
 
   val p_prim : primitive -> pattern
 
+  val p_cons : ?payload:pattern list -> string -> pattern
+
   (* ------------------------------------------------------------------------ *)
   val mix_unit : expr -> mixed
 

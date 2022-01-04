@@ -24,15 +24,7 @@ let%node stable set delay =
 (* code ocaml produit *)
 type 'a stream = unit -> 'a option
 
-type state =
-  { mutable count: int option
-  ; mutable level: bool option
-  ; mutable set: bool option
-  ; mutable prelevel: bool option
-  ; mutable precount: int option
-  ; mutable delay: int option }
-
-let stable set delay () =
+let stable (set: bool stream) (delay: int stream) () =
   let s_count = ref None
   and s_level = ref None
   and s_prelevel = ref None
@@ -42,13 +34,13 @@ let stable set delay () =
   (* input updating *)
   let delay = delay () and set = set () in
   (* stable *)
-  s_level := !s_count |> Option.map (fun count -> count > 0) ;
   s_count :=
     Option.bind set (fun set ->
         if set then delay
         else if Option.value ~default:false !s_prelevel then
           !s_precount |> Option.map (( - ) 1)
         else Some 0 ) ;
+  s_level := !s_count |> Option.map (fun count -> count > 0) ;
   (* end stable *)
   s_precount := precount ;
   s_prelevel := prelevel ;

@@ -14,5 +14,5 @@ and expr =
   | EIf of expr * expr * expr
   | EVar of ident
   | ENotStream of Parsetree.expression
-  | EIfNone of expr * expr
+  | EIfUnInit of expr * expr * expr
   | EApp of expr * expr list

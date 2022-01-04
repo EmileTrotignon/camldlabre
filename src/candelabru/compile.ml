@@ -1,37 +1,35 @@
 open Ast
 open Mocaml.Builder
 
-let fresh_ident =
-  let i = ref (-1) in
-  fun () ->
-    i := !i + 1 ;
-    Printf.sprintf "__candelabru_fv_%i" !i
+let fresh_ident = Common.fresh_ident "__candelabru_fv_"
 
 let bind module_ name o body =
   e_app (e_module_field [module_; "bind"]) [o; e_fun ([p_var name], body)]
 
 let map module_ f o = e_app (e_module_field [module_; "map"]) [f; o]
 
-let option_value option default =
+let frame_value option default =
   e_app
-    (e_module_field ["Option"; "value"])
+    (e_module_field ["Runtime"; "value"])
     ~named_args:[("default", default)] [option]
 
-let option_bind = bind "Option"
+let frame_bind = bind "Runtime"
 
-let option_map = map "Option"
+let frame_map = map "Runtime"
 
 let rec compile_expr = function
   | EIf (cond, e1, e2) ->
       let ident = fresh_ident () in
-      option_bind ident (compile_expr cond)
+      frame_bind ident (compile_expr cond)
         (e_if (e_var ident) (compile_expr e1) (compile_expr e2))
   | EVar ident ->
       e_var ident
   | ENotStream code ->
       e_prim (Mocaml.Primitive.Parsed code)
-  | EIfNone (e1, e2) ->
-      option_value (compile_expr e1) (compile_expr e2)
+  | EIfUnInit (cond, e1, e2) ->
+      e_match (compile_expr cond)
+        [ p_cons "Runtime.UnInit" ^-> compile_expr e1
+        ; p_cons ~payload:[p_wildcard] "Runtime.UnInit" ^-> compile_expr e2 ]
   | EApp (func, args) -> (
     match args with
     | [] ->
@@ -40,9 +38,8 @@ let rec compile_expr = function
         let func = compile_expr func in
         let x = compile_expr x in
         List.fold_left
-          (fun func arg -> option_map func (compile_expr arg))
-          (option_map func x) xs )
-
+          (fun func arg -> frame_map func (compile_expr arg))
+          (frame_map func x) xs )
 
 let defref_none local_var = p_var local_var ^= e_ref (e_var "None")
 

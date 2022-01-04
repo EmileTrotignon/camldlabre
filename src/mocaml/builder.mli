@@ -82,6 +82,8 @@ val p_var : string -> pattern
 
 val p_prim : Primitive.t -> pattern
 
+val p_cons : ?payload:pattern list -> string -> pattern
+
 val mix_unit : expr -> mixed
 
 val mix_prim : Primitive.t -> mixed

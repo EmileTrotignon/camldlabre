@@ -81,7 +81,9 @@ let rec pattern p =
     | PString s ->
         OCaml.string s
     | PInt i ->
-        OCaml.int i )
+        OCaml.int i
+    | PCons (name, payload) ->
+        !^name ^-^ parens (comma_list pattern payload) )
 
 and def (p, e) =
   nl

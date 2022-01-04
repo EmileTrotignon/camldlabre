@@ -1,7 +1,5 @@
 type ident = string
 
-type deref = {stream: ident; var: ident}
-
 type node =
   { args: ident list
   ; local_var: ident list
@@ -11,6 +9,7 @@ type node =
 and expr =
   | EIf of expr * expr * expr
   | EVar of ident
+  | EDeRef of ident
   | ENotStream of Parsetree.expression
   | EFby of expr * expr
   | EPre of ident
