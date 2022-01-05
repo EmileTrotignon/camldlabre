@@ -16,8 +16,10 @@ let rec compile_expr derefs = function
   | S.EApp (_func, _args) ->
       failwith "TODO"
   | S.EFby (first, then_) ->
-      failwith "TODO"
-  | S.EPre e ->
+      let derefs, first = compile_expr derefs first in
+      let derefs, then_ = compile_expr derefs then_ in
+      (derefs, T.EIfUnInit (then_, first, then_))
+  | S.EPre _e ->
       failwith "TODO"
   | EDeRef stream -> (
     match List.assoc_opt stream derefs with
