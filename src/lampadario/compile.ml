@@ -41,7 +41,7 @@ let compile_node S.{args; equations; return} =
   let domain = String.Map.domain equations in
   let local_var = String.Set.elements domain in
   let assignments =
-    equations |> String.Map.map (compile_expr domain) |> String.Map.bindings
+    equations |> String.Map.map (compile_expr domain) |> String.Map.bindings (* TODO : pick the order based on dependencies *)
   in
   T.{args; local_var; assignments; return}
 
