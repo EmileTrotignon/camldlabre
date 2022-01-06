@@ -52,14 +52,14 @@ let compile_node
     ; local_var: ident list
     ; derefs: deref list
     ; precedents: deref list
-    ; assignements: (ident * expr) list
+    ; assignments: (ident * expr) list
     ; return: ident } =
   e_fun
   @@ (args |> List.map p_var)
   ^-> e_let (local_var |> List.map defref_none)
   @@ e_let (args |> List.map defcall_stream)
   @@ e_sequence
-       ( assignements
+       ( assignments
        |> List.map (fun (ident, expr) ->
               e_let (derefs |> List.map compile_deref)
               @@ e_assign_to_ref (e_var ident) (compile_expr expr) ) )

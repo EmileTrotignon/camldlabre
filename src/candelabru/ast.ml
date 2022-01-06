@@ -7,7 +7,7 @@ type node =
   ; local_var: ident list
   ; derefs: deref list
   ; precedents: deref list
-  ; assignements: (ident * expr) list
+  ; assignments: (ident * expr) list
   ; return: ident }
 
 and expr =

@@ -13,8 +13,10 @@ let rec compile_expr derefs = function
       (derefs, T.EVar ident)
   | S.ENotStream code ->
       (derefs, T.ENotStream code)
-  | S.EApp (_func, _args) ->
-      failwith "TODO"
+  | S.EApp (func, args) ->
+      let derefs, func = compile_expr derefs func in
+      let derefs, args = List.fold_left_map compile_expr derefs args in
+      (derefs, T.EApp (func, args))
   | S.EFby (first, then_) ->
       let derefs, first = compile_expr derefs first in
       let derefs, then_ = compile_expr derefs then_ in
@@ -34,17 +36,17 @@ let compile_node
     S.
       { args: ident list
       ; local_var: ident list
-      ; assignements: (ident * expr) list
+      ; assignments: (ident * expr) list
       ; return: ident } =
   let precedents = [] in
-  let derefs, assignements =
+  let derefs, assignments =
     List.fold_left_map
       (fun derefs (ident, expr) ->
         let derefs, nexpr = compile_expr derefs expr in
         (derefs, (ident, nexpr)) )
-      [] assignements
+      [] assignments
   in
   let derefs = derefs |> List.map (fun (stream, var) -> T.{stream; var}) in
-  T.{args; local_var; derefs; precedents; assignements; return}
+  T.{args; local_var; derefs; precedents; assignments; return}
 
 let equal (a : unit) = ( = ) a

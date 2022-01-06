@@ -1,15 +1,12 @@
+open Common
+
 type ident = string
 
-type node =
-  { args: ident list
-  ; local_var: ident list
-  ; assignments: (ident * expr) list
-  ; return: ident }
+type node = {args: ident list; equations: expr String.Map.t; return: ident}
 
 and expr =
   | EIf of expr * expr * expr
   | EVar of ident
-  | EDeRef of ident
   | ENotStream of Parsetree.expression
   | EFby of expr * expr
   | EPre of ident
