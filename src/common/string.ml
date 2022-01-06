@@ -10,4 +10,22 @@ module Map = struct
   let domain m = fold (fun key _data acc -> Set.add key acc) m Set.empty
 end
 
+module Graph = struct
+  module Self = Graph.Persistent.Digraph.Concrete (struct
+    include Stdlib.String
+
+    let hash = Hashtbl.hash
+  end)
+
+  module Dfs = Graph.Traverse.Dfs (Self)
+  module Topological = Graph.Topological.Make (Self)
+  include Self
+
+  let add_edges v edges g = Set.fold (fun e g -> add_edge g v e) edges g
+
+  let of_map m = Map.fold add_edges m empty
+end
+
 include Stdlib.String
+
+let hash = Hashtbl.hash
