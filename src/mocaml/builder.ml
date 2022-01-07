@@ -104,7 +104,7 @@ let p_var s = PVar s
 
 let p_prim p = PPrimitive p
 
-let p_cons ?(payload=[]) s = PCons(s, payload)
+let p_cons ?(payload = []) s = PCons (s, payload)
 
 (* -------------------------------------------------------------------------- *)
 (* mixed builders *)

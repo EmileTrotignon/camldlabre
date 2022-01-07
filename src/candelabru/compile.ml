@@ -11,7 +11,8 @@ let map module_ f o = e_app (e_module_field [module_; "map"]) [f; o]
 let frame_value option default =
   e_app
     (e_module_field ["Runtime"; "value"])
-    ~named_args:[("default", default)] [option]
+    ~named_args:[("default", default)]
+    [option]
 
 let frame_bind = bind "Runtime"
 

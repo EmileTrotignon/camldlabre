@@ -37,11 +37,12 @@ let rec fv_expr expr =
   | S.EPre _e ->
       String.Set.empty
 
-let order_eqs eqs = (* Equations without dependences are first*)
+let order_eqs eqs =
+  (* Equations without dependences are first*)
   let deps = String.Map.map fv_expr eqs in
   let deps_G = String.Graph.of_map deps in
   assert (not @@ String.Graph.Dfs.has_cycle deps_G) ;
-  String.Graph.Topological.fold List.cons deps_G [] 
+  String.Graph.Topological.fold List.cons deps_G []
   |> List.map (fun ident -> (ident, String.Map.find ident eqs))
 
 let compile_node S.{args; equations; return} =
