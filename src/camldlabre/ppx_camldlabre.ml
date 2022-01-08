@@ -13,6 +13,17 @@ expr =
   | EApp of expr * expr list
 *)
 
+let nostream_ext =
+  Extension.declare "nostream" Extension.Context.expression
+    Ast_pattern.(single_expr_payload __)
+    (fun ~loc ~path expr ->
+      let _ = loc and _ = path in
+      expr )
+
+let pattern_nostream p =
+  Ast_pattern.(
+    pexp_extension (extension (string "nostream") (single_expr_payload p)))
+
 let rec pattern_lampadario_expr () =
   Ast_pattern.(
     let rec_parse expr =
@@ -31,7 +42,12 @@ let rec pattern_lampadario_expr () =
     ||| map
           ~f:(fun _ f args ->
             Lampadario.Ast.EApp (rec_parse f, List.map rec_parse args) )
-          (pexp_apply __ (many (pair nolabel __))))
+          (pexp_apply __ (many (pair nolabel __)))
+    ||| map
+          ~f:(fun _ expr ->
+            Lampadario.Ast.ENotStream
+              (Selected_ast.To_ocaml.copy_expression expr) )
+          (pattern_nostream __))
 
 let pattern_lampadario_node =
   Ast_pattern.(
