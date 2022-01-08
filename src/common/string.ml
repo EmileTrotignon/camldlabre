@@ -8,6 +8,9 @@ module Map = struct
   include Map.Make (Stdlib.String)
 
   let domain m = fold (fun key _data acc -> Set.add key acc) m Set.empty
+
+  let of_bindings bds =
+    List.fold_left (fun m (key, data) -> add key data m) empty bds
 end
 
 module Graph = struct

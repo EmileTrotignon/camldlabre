@@ -1,0 +1,12 @@
+(library
+ (name ppx_camldlabre)
+ (wrapped false)
+ (kind ppx_rewriter)
+ (libraries
+  common
+  lampadario
+  kroonluchter
+  candelabru
+  compiler-libs.common
+  ppxlib)
+ (flags :standard -w +39))
