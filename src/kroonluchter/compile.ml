@@ -28,7 +28,7 @@ let compile_sexpr arguments local_var (precedents, derefs) =
       ((precedents, derefs), T.ENotStream code)
 
 let compile_expr arguments local_var (precedents, derefs) =
-  let handle_ident = handle_ident arguments local_var in
+  let compile_sexpr = compile_sexpr arguments local_var in
   function
   | S.EIf (cond, e1, e2) ->
       let (precedents, derefs), cond =
@@ -58,9 +58,9 @@ let compile_expr arguments local_var (precedents, derefs) =
     | None ->
         let var = fresh_ident () in
         let precedents = (stream, var) :: precedents in
-        ((precedents, derefs), EVar var)
+        ((precedents, derefs), T.ESimple (EVar var))
     | Some var ->
-        ((precedents, derefs), EVar var) )
+        ((precedents, derefs), T.ESimple (EVar var)) )
 
 let compile_node
     S.

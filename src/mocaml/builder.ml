@@ -50,9 +50,7 @@ let e_lit_string li = ELitString li
 
 let e_lit_int i = ELitInt i
 
-let e_fun (args, body) =
-  assert (args <> []) ;
-  EFun (args, body)
+let e_fun (args, body) = if args = [] then body else EFun (args, body)
 
 let e_prim p = EPrimitive p
 

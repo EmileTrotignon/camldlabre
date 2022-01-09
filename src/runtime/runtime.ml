@@ -16,6 +16,7 @@ let bind f = function
   | Value v -> (
     match f v with UnInit -> UnInit | Skipped -> Skipped | Value v -> Value v )
 
+
 let has_value frame =
   match frame with UnInit | Skipped -> false | Value _ -> true
 
@@ -23,7 +24,7 @@ let value ~default = function UnInit | Skipped -> default | Value v -> v
 
 type 'a stream = unit -> 'a frame
 
-let fby s1 s2 =
+let fby (s1: 'a stream) (s2: 'a stream) =
   let first = ref true in
   fun () ->
     if !first then (
