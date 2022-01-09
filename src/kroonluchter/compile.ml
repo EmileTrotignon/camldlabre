@@ -1,30 +1,44 @@
 open Common
-
 module S = Ast
 module T = Candelabru.Ast
 
 let fresh_ident = fresh_ident "__kroonluchter_fv_"
 
-let rec compile_expr (precedents, derefs) = function
+let compile_expr arguments local_var (precedents, derefs) =
+  let handle_ident (precedents, derefs) ident =
+    if List.mem ident local_var || List.mem ident arguments then (
+      print_endline "coucou 4" ;
+      match List.assoc_opt ident derefs with
+      | None ->
+          let var = fresh_ident () in
+          let derefs = (ident, var) :: derefs in
+          ((precedents, derefs), var)
+      | Some var ->
+          ((precedents, derefs), var) )
+    else ((precedents, derefs), ident)
+  in
+  function
   | S.EIf (cond, e1, e2) ->
-      let (precedents, derefs), cond = compile_expr (precedents, derefs) cond in
-      let (precedents, derefs), e1 = compile_expr (precedents, derefs) e1 in
-      let (precedents, derefs), e2 = compile_expr (precedents, derefs) e2 in
+      let (precedents, derefs), cond = handle_ident (precedents, derefs) cond in
+      let (precedents, derefs), e1 = handle_ident (precedents, derefs) e1 in
+      let (precedents, derefs), e2 = handle_ident (precedents, derefs) e2 in
       ((precedents, derefs), T.EIf (cond, e1, e2))
   | S.EVar ident ->
+      let (precedents, derefs), ident =
+        handle_ident (precedents, derefs) ident
+      in
       ((precedents, derefs), T.EVar ident)
   | S.ENotStream code ->
       ((precedents, derefs), T.ENotStream code)
   | S.EApply (func, args) ->
-      let (precedents, derefs), func = compile_expr (precedents, derefs) func in
+      let (precedents, derefs), func = handle_ident (precedents, derefs) func in
       let (precedents, derefs), args =
-        List.fold_left_map compile_expr (precedents, derefs) args
+        List.fold_left_map handle_ident (precedents, derefs) args
       in
       ((precedents, derefs), T.EApply (func, args))
   | S.EApplyNoStream (func, args) ->
-      let (precedents, derefs), func = compile_expr (precedents, derefs) func in
       let (precedents, derefs), args =
-        List.fold_left_map compile_expr (precedents, derefs) args
+        List.fold_left_map handle_ident (precedents, derefs) args
       in
       ((precedents, derefs), T.EApplyNoStream (func, args))
   | S.EPre stream -> (
@@ -35,14 +49,6 @@ let rec compile_expr (precedents, derefs) = function
         ((precedents, derefs), EVar var)
     | Some var ->
         ((precedents, derefs), EVar var) )
-  | EDeRef stream -> (
-    match List.assoc_opt stream derefs with
-    | None ->
-        let var = fresh_ident () in
-        let derefs = (stream, var) :: derefs in
-        ((precedents, derefs), EVar var)
-    | Some var ->
-        ((precedents, derefs), EVar var) )
 
 let compile_node
     S.
@@ -50,16 +56,16 @@ let compile_node
       ; local_var: ident list
       ; assignments: (ident * expr) list
       ; return: ident } =
-  printf "n assign = %d\n" (List.length assignments) ;
   let (precedents, derefs), assignments =
     List.fold_left_map
       (fun (precedents, derefs) (ident, expr) ->
         let (precedents, derefs), nexpr =
-          compile_expr (precedents, derefs) expr
+          compile_expr args local_var (precedents, derefs) expr
         in
         ((precedents, derefs), (ident, nexpr)) )
       ([], []) assignments
   in
+  printf "nb derefs = %d\n" (List.length derefs) ;
   let derefs = derefs |> List.map (fun (stream, var) -> T.{stream; var}) in
   let precedents =
     precedents |> List.map (fun (stream, var) -> T.{stream; var})

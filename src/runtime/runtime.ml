@@ -16,6 +16,9 @@ let bind f = function
   | Value v -> (
     match f v with UnInit -> UnInit | Skipped -> Skipped | Value v -> Value v )
 
+let has_value frame =
+  match frame with UnInit | Skipped -> false | Value _ -> true
+
 let value ~default = function UnInit | Skipped -> default | Value v -> v
 
 type 'a stream = unit -> 'a frame

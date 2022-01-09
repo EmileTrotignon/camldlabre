@@ -12,11 +12,10 @@ type node =
   ; return: ident }
 
 and expr =
-  | EIf of expr * expr * expr
+  | EIf of ident * ident * ident
   | EVar of ident
-  | EDeRef of ident
   | ENotStream of Parsetree.expression
   | EPre of ident
-  | EApply of expr * expr list
-  | EApplyNoStream of expr * expr list
+  | EApply of ident * ident list
+  | EApplyNoStream of Parsetree.expression * ident list
 

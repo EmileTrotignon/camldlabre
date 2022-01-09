@@ -125,7 +125,7 @@ and expr e =
         ^|^ expr e1
         ^|^ group (!^"else" ^|^ expr e2)
     | ELet (defs, e) ->
-        space_list def defs ^-^ expr e
+        group (space_list def defs) ^-^ expr e
     | EApp (f, named_args, args) ->
         expr f
         ^-^ space_list named_arg named_args
@@ -199,7 +199,7 @@ let to_channel f channel args =
 let to_string f arg =
   let doc = f arg in
   let buffer = Buffer.create 10 in
-  ToBuffer.pretty 0.8 80 buffer doc ;
+  ToBuffer.pretty 0.8 120 buffer doc ;
   Buffer.contents buffer
 
 let expr_to_string = to_string expr

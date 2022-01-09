@@ -13,4 +13,4 @@ and expr =
   | ENotStream of Parsetree.expression
   | EPre of ident
   | EApply of expr * expr list
-  | EApplyNoStream of expr * expr list
+  | EApplyNoStream of Parsetree.expression * expr list

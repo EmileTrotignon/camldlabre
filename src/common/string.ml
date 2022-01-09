@@ -30,6 +30,8 @@ module Graph = struct
 
   let of_map m =
     Map.fold (fun v edges g -> add_edges v edges (add_vertex g v)) m empty
+
+
 end
 
 include Stdlib.String

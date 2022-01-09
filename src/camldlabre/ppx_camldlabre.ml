@@ -34,7 +34,8 @@ let rec pattern_lampadario_expr () =
           (pexp_apply __ (many (pair nolabel __)))
     ||| map
           ~f:(fun _ f args ->
-            Lampadario.Ast.EApplyNoStream (rec_parse f, List.map rec_parse args)
+            Lampadario.Ast.EApplyNoStream
+              (Selected_ast.To_ocaml.copy_expression f, List.map rec_parse args)
             )
           (pattern_nostream_apply __ (many (pair nolabel __)))
     ||| map

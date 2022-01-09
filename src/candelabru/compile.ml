@@ -3,10 +3,11 @@ open Mocaml.Builder
 
 let fresh_ident = Common.fresh_ident "__candelabru_fv_"
 
-let bind module_ name o body =
-  e_app (e_module_field [module_; "bind"]) [o; e_fun ([p_var name], body)]
+let bind module_ name frame body =
+  e_app (e_module_field [module_; "bind"]) [e_fun ([p_var name], body); frame]
 
-let map module_ f o = e_app (e_module_field [module_; "map"]) [f; o]
+let map module_ name frame body =
+  e_app (e_module_field [module_; "map"]) [e_fun ([p_var name], body); frame]
 
 let frame_value option default =
   e_app
@@ -18,31 +19,44 @@ let frame_bind = bind "Runtime"
 
 let frame_map = map "Runtime"
 
-let rec compile_expr = function
+let compile_expr = function
   | EIf (cond, e1, e2) ->
       let ident = fresh_ident () in
-      frame_bind ident (compile_expr cond)
-        (e_if (e_var ident) (compile_expr e1) (compile_expr e2))
+      frame_bind ident (e_var cond) (e_if (e_var ident) (e_var e1) (e_var e2))
   | EVar ident ->
-      e_var ident
+      e_cons "Runtime.Value" ~payload:[e_var ident]
   | ENotStream code ->
-      e_fun ([p_cons "()"] ^-> e_prim (Mocaml.Primitive.Parsed code))
+      e_cons "Runtime.Value"
+        ~payload:
+          [e_fun ([p_cons "()"] ^-> e_prim (Mocaml.Primitive.Parsed code))]
   | EIfUnInit (cond, e1, e2) ->
-      e_match (compile_expr cond)
-        [ p_cons "Runtime.UnInit" ^-> compile_expr e1
-        ; p_cons ~payload:[p_wildcard] "Runtime.UnInit" ^-> compile_expr e2 ]
+      e_match (e_var cond)
+        [ p_cons "Runtime.UnInit" ^-> e_var e1
+        ; p_cons ~payload:[p_wildcard] "Runtime.UnInit" ^-> e_var e2 ]
   | EApplyNoStream (func, args) -> (
     match args with
     | [] ->
         assert false
-    | x :: xs ->
-        let func = compile_expr func in
-        let x = compile_expr x in
+    | arg :: args ->
+        let func = e_prim (Mocaml.Primitive.Parsed func) in
         List.fold_left
-          (fun func arg -> frame_map func (compile_expr arg))
-          (frame_map func x) xs )
-  | EApply (func, args) ->
-      e_app (compile_expr func) (args |> List.map compile_expr)
+          (fun expr arg -> frame_bind arg (e_var arg) expr)
+          (frame_bind arg (e_var arg)
+             (e_cons "Runtime.Value"
+                ~payload:[e_app func ((args |> List.map e_var) @ [e_unit])] ) )
+          args )
+  | EApply (func, args) -> (
+    match List.rev args with
+    | [] ->
+        assert false
+    | arg :: args ->
+        frame_bind func (e_var func)
+          (List.fold_left
+             (fun expr arg -> frame_bind arg (e_var arg) expr)
+             (frame_map arg (e_var arg)
+                (e_app (e_var func)
+                   ((arg :: args |> List.rev |> List.map e_var) @ [e_unit]) ) )
+             args ) )
 
 let defref_uninit local_var = p_var local_var ^= e_ref (e_cons "Runtime.UnInit")
 
@@ -65,12 +79,11 @@ let compile_node
        ( assignments
        |> List.map (fun (ident, expr) ->
               e_let (derefs |> List.map compile_deref)
-              @@ e_assign_to_ref (e_var ident)
-                   (e_cons "Runtime.Value" ~payload:[compile_expr expr]) ) )
+              @@ e_assign_to_ref (e_var ident) (compile_expr expr) ) )
   @@ e_sequence
        ( precedents
        |> List.map (fun {stream; var} ->
               e_assign_to_ref (e_var stream) (e_var var) ) )
-  @@ e_var return
+  @@ e_deref @@ e_var return
 
 let equal (a : unit) = ( = ) a
