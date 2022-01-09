@@ -23,16 +23,14 @@ let compile_expr = function
   | EIf (cond, e1, e2) ->
       let ident = fresh_ident () in
       frame_bind ident (e_var cond) (e_if (e_var ident) (e_var e1) (e_var e2))
-  | EVar ident ->
-      e_cons "Runtime.Value" ~payload:[e_var ident]
-  | ENotStream code ->
-      e_cons "Runtime.Value"
-        ~payload:
-          [e_fun ([p_cons "()"] ^-> e_prim (Mocaml.Primitive.Parsed code))]
-  | EIfUnInit (cond, e1, e2) ->
-      e_match (e_var cond)
-        [ p_cons "Runtime.UnInit" ^-> e_var e1
-        ; p_cons ~payload:[p_wildcard] "Runtime.UnInit" ^-> e_var e2 ]
+  | ESimple e -> (
+    match e with
+    | EVar ident ->
+        e_cons "Runtime.Value" ~payload:[e_var ident]
+    | ENotStream code ->
+        e_cons "Runtime.Value"
+          ~payload:
+            [e_fun ([p_cons "()"] ^-> e_prim (Mocaml.Primitive.Parsed code))] )
   | EApplyNoStream (func, args) -> (
     match args with
     | [] ->

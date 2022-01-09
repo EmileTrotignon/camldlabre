@@ -4,25 +4,21 @@ module T = Candelabru.Ast
 
 let fresh_ident = fresh_ident "__kroonluchter_fv_"
 
-let compile_expr arguments local_var (precedents, derefs) =
-  let handle_ident (precedents, derefs) ident =
-    if List.mem ident local_var || List.mem ident arguments then (
-      print_endline "coucou 4" ;
-      match List.assoc_opt ident derefs with
-      | None ->
-          let var = fresh_ident () in
-          let derefs = (ident, var) :: derefs in
-          ((precedents, derefs), var)
-      | Some var ->
-          ((precedents, derefs), var) )
-    else ((precedents, derefs), ident)
-  in
+let handle_ident arguments local_var (precedents, derefs) ident =
+  if List.mem ident local_var || List.mem ident arguments then (
+    print_endline "coucou 4" ;
+    match List.assoc_opt ident derefs with
+    | None ->
+        let var = fresh_ident () in
+        let derefs = (ident, var) :: derefs in
+        ((precedents, derefs), var)
+    | Some var ->
+        ((precedents, derefs), var) )
+  else ((precedents, derefs), ident)
+
+let compile_sexpr arguments local_var (precedents, derefs) =
+  let handle_ident = handle_ident arguments local_var in
   function
-  | S.EIf (cond, e1, e2) ->
-      let (precedents, derefs), cond = handle_ident (precedents, derefs) cond in
-      let (precedents, derefs), e1 = handle_ident (precedents, derefs) e1 in
-      let (precedents, derefs), e2 = handle_ident (precedents, derefs) e2 in
-      ((precedents, derefs), T.EIf (cond, e1, e2))
   | S.EVar ident ->
       let (precedents, derefs), ident =
         handle_ident (precedents, derefs) ident
@@ -30,6 +26,18 @@ let compile_expr arguments local_var (precedents, derefs) =
       ((precedents, derefs), T.EVar ident)
   | S.ENotStream code ->
       ((precedents, derefs), T.ENotStream code)
+
+let compile_expr arguments local_var (precedents, derefs) =
+  let handle_ident = handle_ident arguments local_var in
+  function
+  | S.EIf (cond, e1, e2) ->
+      let (precedents, derefs), cond = handle_ident (precedents, derefs) cond in
+      let (precedents, derefs), e1 = handle_ident (precedents, derefs) e1 in
+      let (precedents, derefs), e2 = handle_ident (precedents, derefs) e2 in
+      ((precedents, derefs), T.EIf (cond, e1, e2))
+  | S.ESimple e ->
+      let (precedents, derefs), e = handle_ident (precedents, derefs) e in
+      ((precedents, derefs), T.ESimple e)
   | S.EApply (func, args) ->
       let (precedents, derefs), func = handle_ident (precedents, derefs) func in
       let (precedents, derefs), args =

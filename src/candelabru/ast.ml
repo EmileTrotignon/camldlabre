@@ -9,6 +9,14 @@ type ident = string
 
 type deref = {stream: ident; var: ident}
 
+type simple_expr = EVar of ident | ENotStream of Parsetree.expression
+
+type expr =
+  | EIf of simple_expr * simple_expr * simple_expr
+  | ESimple of simple_expr
+  | EApply of simple_expr * simple_expr list
+  | EApplyNoStream of Parsetree.expression * simple_expr list
+
 type node =
   { args: ident list
   ; local_var: ident list
@@ -16,11 +24,3 @@ type node =
   ; precedents: deref list
   ; assignments: (ident * expr) list
   ; return: ident }
-
-and expr =
-  | EIf of ident * ident * ident
-  | EVar of ident
-  | ENotStream of Parsetree.expression
-  | EIfUnInit of ident * ident * ident
-  | EApply of ident * ident list
-  | EApplyNoStream of Parsetree.expression * ident list
