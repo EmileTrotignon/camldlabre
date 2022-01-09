@@ -9,6 +9,8 @@ module Map = struct
 
   let domain m = fold (fun key _data acc -> Set.add key acc) m Set.empty
 
+  let size m = fold (fun _ _ -> ( + ) 1) m 0
+
   let of_bindings bds =
     List.fold_left (fun m (key, data) -> add key data m) empty bds
 end
@@ -28,8 +30,13 @@ module Graph = struct
  
   let add_edges v edges g = Set.fold (fun e g -> add_edge g v e) edges g
 
+<<<<<<< HEAD
 (* Just a fonction to create a graph form the Adjacency list*)
   let of_map m = Map.fold add_edges m empty
+=======
+  let of_map m =
+    Map.fold (fun v edges g -> add_edges v edges (add_vertex g v)) m empty
+>>>>>>> refs/remotes/origin/master
 end
 
 include Stdlib.String

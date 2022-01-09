@@ -38,7 +38,7 @@ let e_leti (li, e) = e_let li e
 
 let e_app f ?(named_args = []) args = EApp (f, named_args, args)
 
-let e_cons cons li = ECons (cons, li)
+let e_cons ?(payload = []) cons = ECons (cons, payload)
 
 let e_var name = EVar name
 
@@ -50,7 +50,9 @@ let e_lit_string li = ELitString li
 
 let e_lit_int i = ELitInt i
 
-let e_fun (args, body) = EFun (args, body)
+let e_fun (args, body) =
+  assert (args <> []) ;
+  EFun (args, body)
 
 let e_prim p = EPrimitive p
 
@@ -60,7 +62,7 @@ let e_deref e = e_app (e_var "!") [e]
 
 let e_assign_to_ref r v = e_app (e_var "( := )") [r; v]
 
-let e_sequence li e = ESequence (li, e)
+let e_sequence li e = if li = [] then e else ESequence (li, e)
 
 let e_open_module m e = EOpenModule (m, e)
 
@@ -76,7 +78,7 @@ let e_annot e t = EAnnotated (e, t)
 
 let ( ^: ) a b = EAnnotated (a, b)
 
-let e_li_cons e1 e2 = e_cons "(::)" [e1; e2]
+let e_li_cons e1 e2 = e_cons "(::)" ~payload:[e1; e2]
 
 let e_empty_list = e_lit_list []
 

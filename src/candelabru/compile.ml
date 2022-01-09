@@ -26,12 +26,12 @@ let rec compile_expr = function
   | EVar ident ->
       e_var ident
   | ENotStream code ->
-      e_prim (Mocaml.Primitive.Parsed code)
+      e_fun ([p_cons "()"] ^-> e_prim (Mocaml.Primitive.Parsed code))
   | EIfUnInit (cond, e1, e2) ->
       e_match (compile_expr cond)
         [ p_cons "Runtime.UnInit" ^-> compile_expr e1
         ; p_cons ~payload:[p_wildcard] "Runtime.UnInit" ^-> compile_expr e2 ]
-  | EApp (func, args) -> (
+  | EApplyNoStream (func, args) -> (
     match args with
     | [] ->
         assert false
@@ -41,8 +41,10 @@ let rec compile_expr = function
         List.fold_left
           (fun func arg -> frame_map func (compile_expr arg))
           (frame_map func x) xs )
+  | EApply (func, args) ->
+      e_app (compile_expr func) (args |> List.map compile_expr)
 
-let defref_none local_var = p_var local_var ^= e_ref (e_var "None")
+let defref_uninit local_var = p_var local_var ^= e_ref (e_cons "Runtime.UnInit")
 
 let defcall_stream stream = p_var stream ^= e_app (e_var stream) [e_unit]
 
@@ -56,14 +58,15 @@ let compile_node
     ; assignments: (ident * expr) list
     ; return: ident } =
   e_fun
-  @@ (args |> List.map p_var)
-  ^-> e_let (local_var |> List.map defref_none)
+  @@ ((args |> List.map p_var) @ [p_cons "()"])
+  ^-> e_let (local_var |> List.map defref_uninit)
   @@ e_let (args |> List.map defcall_stream)
   @@ e_sequence
        ( assignments
        |> List.map (fun (ident, expr) ->
               e_let (derefs |> List.map compile_deref)
-              @@ e_assign_to_ref (e_var ident) (compile_expr expr) ) )
+              @@ e_assign_to_ref (e_var ident)
+                   (e_cons "Runtime.Value" ~payload:[compile_expr expr]) ) )
   @@ e_sequence
        ( precedents
        |> List.map (fun {stream; var} ->

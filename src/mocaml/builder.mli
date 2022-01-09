@@ -22,7 +22,7 @@ val e_leti : (pattern * expr) list * expr -> expr
 
 val e_app : expr -> ?named_args:(string * expr) list -> expr list -> expr
 
-val e_cons : string -> expr list -> expr
+val e_cons : ?payload:expr list -> string -> expr
 
 val e_var : string -> expr
 

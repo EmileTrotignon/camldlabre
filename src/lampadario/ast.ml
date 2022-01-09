@@ -11,6 +11,6 @@ and expr =
   | EIf of expr * expr * expr
   | EVar of ident
   | ENotStream of Parsetree.expression
-  | EFby of expr * expr
   | EPre of ident
-  | EApp of expr * expr list
+  | EApply of expr * expr list
+  | EApplyNoStream of expr * expr list

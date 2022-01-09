@@ -1,3 +1,7 @@
 (tests
+<<<<<<< HEAD
  (names candelabru tests_lampadario)
+=======
+ (names test_lampadario)
+>>>>>>> refs/remotes/origin/master
  (libraries alcotest candelabru lampadario))

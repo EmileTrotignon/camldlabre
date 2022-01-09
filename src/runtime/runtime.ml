@@ -1,6 +1,6 @@
 type 'a frame = UnInit | Skipped | Value of 'a
 
-let map ~f = function
+let map f = function
   | UnInit ->
       UnInit
   | Skipped ->
@@ -8,7 +8,7 @@ let map ~f = function
   | Value v ->
       Value (f v)
 
-let bind ~f = function
+let bind f = function
   | UnInit ->
       UnInit
   | Skipped ->
@@ -19,3 +19,11 @@ let bind ~f = function
 let value ~default = function UnInit | Skipped -> default | Value v -> v
 
 type 'a stream = unit -> 'a frame
+
+let fby s1 s2 =
+  let first = ref true in
+  fun () ->
+    if !first then (
+      first := false ;
+      s1 () )
+    else s2 ()
