@@ -3,26 +3,15 @@ open Common
 
 let name = "node"
 
-(*
-expr =
-  | EIf of expr * expr * expr
-  | EVar of ident
-  | ENotStream of Parsetree.expression
-  | EFby of expr * expr
-  | EPre of ident
-  | EApp of expr * expr list
-*)
-
-let nostream_ext =
-  Extension.declare "nostream" Extension.Context.expression
-    Ast_pattern.(single_expr_payload __)
-    (fun ~loc ~path expr ->
-      let _ = loc and _ = path in
-      expr )
-
 let pattern_nostream p =
   Ast_pattern.(
     pexp_extension (extension (string "nostream") (single_expr_payload p)))
+
+let pattern_nostream_apply p_f p_args =
+  Ast_pattern.(
+    pexp_extension
+      (extension (string "nostream_apply")
+         (single_expr_payload (pexp_apply p_f p_args)) ))
 
 let rec pattern_lampadario_expr () =
   Ast_pattern.(
@@ -41,8 +30,13 @@ let rec pattern_lampadario_expr () =
              (pair nolabel (pexp_ident (lident __)) ^:: nil) )
     ||| map
           ~f:(fun _ f args ->
-            Lampadario.Ast.EApp (rec_parse f, List.map rec_parse args) )
+            Lampadario.Ast.EApply (rec_parse f, List.map rec_parse args) )
           (pexp_apply __ (many (pair nolabel __)))
+    ||| map
+          ~f:(fun _ f args ->
+            Lampadario.Ast.EApplyNoStream (rec_parse f, List.map rec_parse args)
+            )
+          (pattern_nostream_apply __ (many (pair nolabel __)))
     ||| map
           ~f:(fun _ expr ->
             Lampadario.Ast.ENotStream
@@ -60,6 +54,7 @@ let pattern_lampadario_node =
                  , parse (pattern_lampadario_expr ()) expr.pexp_loc expr () ) )
           |> String.Map.of_bindings
         in
+        (* todo args *)
         (name, Lampadario.Ast.{args= []; return; equations}) )
       (pstr
          ( pstr_value nonrecursive
@@ -81,6 +76,7 @@ let expand ~loc ~path:_ si =
     |> Candelabru.Compile.compile_node
     |> Mocaml.(Printer.expr_to_string)
   in
+  print_endline code ;
   let buffer = Lexing.from_string code in
   Lexing.set_position buffer loc.loc_start ;
   let expr =

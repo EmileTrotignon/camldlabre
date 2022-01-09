@@ -5,3 +5,5 @@ let fresh_ident prefix =
     Printf.sprintf "%s%i" prefix !i
 
 module String = String
+
+include Printf

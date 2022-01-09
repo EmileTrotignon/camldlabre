@@ -83,7 +83,8 @@ let rec pattern p =
     | PInt i ->
         OCaml.int i
     | PCons (name, payload) ->
-        !^name ^-^ parens (comma_list pattern payload) )
+        if payload = [] then !^name
+        else !^name ^-^ parens (comma_list pattern payload) )
 
 and def (p, e) =
   nl
@@ -130,7 +131,7 @@ and expr e =
         ^-^ space_list named_arg named_args
         ^-^ space_list (parens @> expr) args
     | ECons (cons, args) ->
-        !^cons ^-^ parens (comma_list expr args)
+        if args = [] then !^cons else !^cons ^-^ parens (comma_list expr args)
     | ETuple exprs ->
         parens (comma_list expr exprs)
     | ELitList exprs ->
