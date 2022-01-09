@@ -11,7 +11,7 @@ let rec compile_expr streams expr =
       let cond = ce cond in
       T.EIf (cond, ce e1, ce e2)
   | S.EVar ident ->
-      if String.Set.mem ident streams then T.EDeRef ident else T.EVar ident
+      if String.Set.mem ident streams then T.EDeRef ident else T.EVar ident 
   | S.ENotStream code ->
       T.ENotStream code
   | S.EApp (func, args) ->
@@ -21,6 +21,7 @@ let rec compile_expr streams expr =
   | S.EPre e ->
       T.EPre e
 
+(* A function that give the dependancies of an equation *)
 let rec fv_expr expr =
   match expr with
   | S.EIf (cond, e1, e2) ->
@@ -37,6 +38,7 @@ let rec fv_expr expr =
   | S.EPre _e ->
       String.Set.empty
 
+(*A function that create a order for equations according to their dependancies*)
 let order_eqs eqs =
   (* Equations without dependences are first*)
   let deps = String.Map.map fv_expr eqs in
