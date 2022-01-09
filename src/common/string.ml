@@ -21,11 +21,13 @@ module Graph = struct
 
     let hash = Hashtbl.hash
   end)
-
+ (* Module that contain the has_cycle fonction*)
   module Dfs = Graph.Traverse.Dfs (Self)
+  (* Module that contain the topological sort*)
   module Topological = Graph.Topological.Make (Self)
   include Self
 
+ 
   let add_edges v edges g = Set.fold (fun e g -> add_edge g v e) edges g
 
   let of_map m =
