@@ -87,10 +87,10 @@ let rec pattern p =
         else !^name ^-^ parens (comma_list pattern payload) )
 
 and def (p, e) =
-  nl
-  ^^ group (!^"let" ^-^ pattern p ^-^ equal)
-  ^^ nest_break 1 (expr e)
-  ^|^ string "in"
+  group
+    ( group (!^"let" ^-^ pattern p ^-^ equal)
+    ^^ nest_break 1 (expr e)
+    ^|^ string "in" )
 
 and mixed = function
   | MiUnit e ->
@@ -194,7 +194,7 @@ and program s = nl_list struct_item s
 
 let to_channel f channel args =
   let doc = f args in
-  ToChannel.pretty 0.8 80 channel doc
+  ToChannel.pretty 0.8 120 channel doc
 
 let to_string f arg =
   let doc = f arg in
