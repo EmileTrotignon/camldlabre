@@ -4,69 +4,73 @@ module T = Kroonluchter.Ast
 
 let fresh_ident = fresh_ident "__lampadario_fv_"
 
-let rec compile_expr args (eqs : 'a String.Map.t) expr =
-  let compile_expr = compile_expr args in
+let ident_of_expr = function
+  | T.ESimple s ->
+      `Simple s
+  | _ ->
+      let ident = fresh_ident () in
+      `Need_eq (ident, T.EVar ident)
+
+let bind = String.Map.add
+
+let bind_if bool key data map = if bool then bind key data map else map
+
+let rec compile_subexpr eqs expr =
+  match expr with
+  | S.EVar ident ->
+      (eqs, T.EVar ident)
+  | S.ENotStream prim ->
+      (eqs, T.ENotStream prim)
+  | _ ->
+      let iexpr = fresh_ident () in
+      let eqs, expr = compile_expr eqs expr in
+      let eqs = String.Map.add iexpr expr eqs in
+      (eqs, T.EVar iexpr)
+
+and compile_expr (eqs : 'a String.Map.t) expr =
   match expr with
   | S.EIf (cond, e1, e2) ->
-      let icond = fresh_ident ()
-      and i1 = fresh_ident ()
-      and i2 = fresh_ident () in
-      let eqs, cond = compile_expr eqs cond in
-      let eqs = String.Map.add icond cond eqs in
-      let eqs, e1 = compile_expr eqs e1 in
-      let eqs = String.Map.add i1 e1 eqs in
-      let eqs, e2 = compile_expr eqs e2 in
-      let eqs = String.Map.add i2 e2 eqs in
-      (eqs, T.EIf (icond, i1, i2))
+      let eqs, cond = compile_subexpr eqs cond in
+      let eqs, e1 = compile_subexpr eqs e1 in
+      let eqs, e2 = compile_subexpr eqs e2 in
+      (eqs, T.EIf (cond, e1, e2))
   | S.EVar ident ->
-      (eqs, T.EVar ident) (* todo : handle arguments *)
+      (eqs, T.ESimple (T.EVar ident))
   | S.ENotStream code ->
-      (eqs, T.ENotStream code)
+      (eqs, T.ESimple (T.ENotStream code))
   | S.EApply (func, args) ->
-      let ifunc = fresh_ident () in
-      let eqs, func = compile_expr eqs func in
-      let eqs = String.Map.add ifunc func eqs in
-      let eqs, iargs =
-        List.fold_left_map
-          (fun eqs arg ->
-            let iarg = fresh_ident () in
-            let eqs, arg = compile_expr eqs arg in
-            let eqs = String.Map.add iarg arg eqs in
-            (eqs, iarg) )
-          eqs args
-      in
-      (eqs, T.EApply (ifunc, iargs))
+      let eqs, func = compile_subexpr eqs func in
+      let eqs, args = List.fold_left_map compile_subexpr eqs args in
+      (eqs, T.EApply (func, args))
   | S.EApplyNoStream (func, args) ->
-      let eqs, iargs =
-        List.fold_left_map
-          (fun eqs arg ->
-            let iarg = fresh_ident () in
-            let eqs, arg = compile_expr eqs arg in
-            let eqs = String.Map.add iarg arg eqs in
-            (eqs, iarg) )
-          eqs args
-      in
-      (eqs, T.EApplyNoStream (func, iargs))
+      let eqs, args = List.fold_left_map compile_subexpr eqs args in
+      (eqs, T.EApplyNoStream (func, args))
   | S.EPre ident ->
       (eqs, T.EPre ident)
 
-let compile_equation args name expr eqs =
-  let eqs, expr = compile_expr args eqs expr in
-  String.Map.add name expr eqs
+let compile_equation name expr eqs =
+  let eqs, expr = compile_expr eqs expr in
+  bind name expr eqs
+
+let fv_simple = function
+  | T.EVar ident ->
+      String.Set.singleton ident
+  | T.ENotStream _prim ->
+      String.Set.empty
 
 let fv_expr domain expr =
   let r =
     match expr with
     | T.EIf (cond, e1, e2) ->
-        String.Set.of_list [cond; e1; e2]
-    | T.EVar ident ->
+        String.Set.unions [fv_simple cond; fv_simple e1; fv_simple e2]
+    | T.ESimple (EVar ident) ->
         String.Set.singleton ident
-    | T.ENotStream _code ->
+    | T.ESimple (T.ENotStream _code) ->
         String.Set.empty
     | T.EApply (func, args) ->
-        String.Set.add func (String.Set.of_list args)
+        String.Set.unions (fv_simple func :: (args |> List.map fv_simple))
     | T.EApplyNoStream (_func, args) ->
-        String.Set.of_list args
+        String.Set.unions (args |> List.map fv_simple)
     | T.EPre _e ->
         String.Set.empty
   in
@@ -86,9 +90,7 @@ let order_eqs domain eqs =
 
 let compile_node S.{args; equations; return} =
   printf "n equations = %d\n" (String.Map.size equations) ;
-  let equations =
-    String.Map.fold (compile_equation args) equations String.Map.empty
-  in
+  let equations = String.Map.fold compile_equation equations String.Map.empty in
   let left_hand_side = String.Map.domain equations in
   let local_var = String.Set.elements left_hand_side in
   printf "nb local_var : %d\n" (List.length local_var) ;
