@@ -31,22 +31,26 @@ let compile_expr arguments local_var (precedents, derefs) =
   let handle_ident = handle_ident arguments local_var in
   function
   | S.EIf (cond, e1, e2) ->
-      let (precedents, derefs), cond = handle_ident (precedents, derefs) cond in
-      let (precedents, derefs), e1 = handle_ident (precedents, derefs) e1 in
-      let (precedents, derefs), e2 = handle_ident (precedents, derefs) e2 in
+      let (precedents, derefs), cond =
+        compile_sexpr (precedents, derefs) cond
+      in
+      let (precedents, derefs), e1 = compile_sexpr (precedents, derefs) e1 in
+      let (precedents, derefs), e2 = compile_sexpr (precedents, derefs) e2 in
       ((precedents, derefs), T.EIf (cond, e1, e2))
   | S.ESimple e ->
-      let (precedents, derefs), e = handle_ident (precedents, derefs) e in
+      let (precedents, derefs), e = compile_sexpr (precedents, derefs) e in
       ((precedents, derefs), T.ESimple e)
   | S.EApply (func, args) ->
-      let (precedents, derefs), func = handle_ident (precedents, derefs) func in
+      let (precedents, derefs), func =
+        compile_sexpr (precedents, derefs) func
+      in
       let (precedents, derefs), args =
-        List.fold_left_map handle_ident (precedents, derefs) args
+        List.fold_left_map compile_sexpr (precedents, derefs) args
       in
       ((precedents, derefs), T.EApply (func, args))
   | S.EApplyNoStream (func, args) ->
       let (precedents, derefs), args =
-        List.fold_left_map handle_ident (precedents, derefs) args
+        List.fold_left_map compile_sexpr (precedents, derefs) args
       in
       ((precedents, derefs), T.EApplyNoStream (func, args))
   | S.EPre stream -> (
