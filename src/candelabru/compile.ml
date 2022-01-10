@@ -1,8 +1,8 @@
-(* open Common *)
+open Common
 open Ast
 open Mocaml.Builder
 
-let fresh_ident = Common.fresh_ident "__candelabru_fv_"
+let fresh_ident = fresh_ident "__candelabru_fv_"
 
 let bind module_ name frame body =
   e_app (e_module_field [module_; "bind"]) [e_fun ([p_var name], body); frame]
@@ -116,7 +116,7 @@ let compile_expr =
 
 let defref_uninit local_var = p_var local_var ^= e_ref (e_cons "Runtime.UnInit")
 
-let defcall_stream stream = p_var stream ^= e_app (e_var stream) [e_unit]
+let arg_name = sprintf "__arg_%s"
 
 let compile_deref {stream; var} = p_var var ^= e_deref (e_var stream)
 
@@ -126,6 +126,12 @@ let compile_node
     ; precedents: deref list
     ; assignments: (ident * expr) list
     ; return: ident } =
+  let assignements_arg =
+    args
+    |> List.map (fun arg ->
+           e_assign_to_ref (e_var arg)
+             (e_app (arg |> arg_name |> e_var) [e_unit]) )
+  in
   let def_applies, assignments =
     assignments
     |> List.fold_left_map
@@ -135,12 +141,13 @@ let compile_node
          []
   in
   e_fun
-  @@ (args |> List.map p_var)
+  @@ (args |> List.map arg_name |> List.map p_var)
   ^-> e_let (local_var |> List.map defref_uninit)
-  @@ e_let (args |> List.map defcall_stream)
+  @@ e_let (args |> List.map defref_uninit)
   @@ e_let def_applies @@ e_fun
   @@ [p_cons "()"]
   ^-> e_let (precedents |> List.map compile_deref)
+  @@ e_sequence assignements_arg
   @@ e_sequence assignments
   (*@@ e_sequence
        ( precedents

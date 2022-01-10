@@ -3,6 +3,8 @@ open Common
 
 let name = "node"
 
+let pexp_simple_fun pat body = Ast_pattern.(pexp_fun nolabel none pat body)
+
 let pattern_nostream p =
   Ast_pattern.(
     pexp_extension (extension (string "nostream") (single_expr_payload p)))
@@ -47,7 +49,8 @@ let rec pattern_lampadario_expr () =
 let pattern_lampadario_node =
   Ast_pattern.(
     map
-      ~f:(fun _ name equations return ->
+      ~f:(fun _ name args _ equations return ->
+        let args = if args = "" then [] else String.split_on_char ' ' args in
         let equations =
           equations
           |> List.map (fun (ident, expr) ->
@@ -56,17 +59,19 @@ let pattern_lampadario_node =
           |> String.Map.of_bindings
         in
         (* todo args *)
-        (name, Lampadario.Ast.{args= []; return; equations}) )
+        (name, Lampadario.Ast.{args; return; equations}) )
       (pstr
          ( pstr_value nonrecursive
              ( value_binding ~pat:(ppat_var __)
                  ~expr:
-                   (pexp_let nonrecursive
-                      (many
-                         (map
-                            ~f:(fun _ ident expr -> (ident, expr))
-                            (value_binding ~pat:(ppat_var __) ~expr:__) ) )
-                      (pexp_ident (lident __)) )
+                   (pexp_simple_fun
+                      (ppat_constant (pconst_string __ __ none))
+                      (pexp_let nonrecursive
+                         (many
+                            (map
+                               ~f:(fun _ ident expr -> (ident, expr))
+                               (value_binding ~pat:(ppat_var __) ~expr:__) ) )
+                         (pexp_ident (lident __)) ) )
              ^:: nil )
          ^:: nil ) ))
 
