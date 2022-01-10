@@ -18,7 +18,7 @@ let _dirac =
     x := __candelabru_fv_0 () ;
     !x
 
-let%node dirac =
+let%node dirac "" =
   let x = fby [%nostream 1] [%nostream 0] in
   x
 
@@ -77,17 +77,38 @@ let _alt =
     x := __candelabru_fv_1 () ;
     !x
 
-let%node alternator =
+let%node _alternator "" =
   let x = fby [%nostream true] [%nostream_apply not (pre x)] in
+  x
+
+let alternate5 i = if i = 0 then 5 else 0
+
+let%node alternator5 "" =
+  let x = fby [%nostream 0] [%nostream_apply alternate5 (pre x)] in
+  x
+
+let alternate4 i = if i = 0 then 4 else 0
+
+let%node alternator4 "" =
+  let x = fby [%nostream 0] [%nostream_apply alternate4 (pre x)] in
+  x
+
+let%node sum "s1 s2" =
+  let x = [%nostream_apply s1 + s2] in
+  x
+
+let%node summed "" =
+  let x = sum alternator4 alternator5 in
   x
 
 let print_bool b = print_endline (if b then "true" else "false")
 
 let () =
   for _ = 0 to 9 do
-    ignore (map print_bool (alternator ()))
+    ignore (map print_int (summed ()))
   done
 
+let () = print_newline ()
 
 let () =
   for _ = 0 to 9 do
