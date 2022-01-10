@@ -4,63 +4,40 @@ module T = Candelabru.Ast
 
 let fresh_ident = fresh_ident "__kroonluchter_fv_"
 
-let handle_ident arguments local_var (precedents, derefs) ident =
-  if List.mem ident local_var || List.mem ident arguments then (
-    print_endline "coucou 4" ;
-    match List.assoc_opt ident derefs with
-    | None ->
-        let var = fresh_ident () in
-        let derefs = (ident, var) :: derefs in
-        ((precedents, derefs), var)
-    | Some var ->
-        ((precedents, derefs), var) )
-  else ((precedents, derefs), ident)
-
-let compile_sexpr arguments local_var (precedents, derefs) =
-  let handle_ident = handle_ident arguments local_var in
-  function
+let compile_sexpr arguments local_var = function
   | S.EVar ident ->
-      let (precedents, derefs), ident =
-        handle_ident (precedents, derefs) ident
-      in
-      ((precedents, derefs), T.EVar ident)
+      if List.mem ident local_var || List.mem ident arguments then
+        T.EDeref ident
+      else T.EVar ident
   | S.ENotStream code ->
-      ((precedents, derefs), T.ENotStream code)
+      T.ENotStream code
 
-let compile_expr arguments local_var (precedents, derefs) =
+let compile_expr arguments local_var precedents =
   let compile_sexpr = compile_sexpr arguments local_var in
   function
   | S.EIf (cond, e1, e2) ->
-      let (precedents, derefs), cond =
-        compile_sexpr (precedents, derefs) cond
-      in
-      let (precedents, derefs), e1 = compile_sexpr (precedents, derefs) e1 in
-      let (precedents, derefs), e2 = compile_sexpr (precedents, derefs) e2 in
-      ((precedents, derefs), T.EIf (cond, e1, e2))
+      let cond = compile_sexpr cond in
+      let e1 = compile_sexpr e1 in
+      let e2 = compile_sexpr e2 in
+      (precedents, T.EIf (cond, e1, e2))
   | S.ESimple e ->
-      let (precedents, derefs), e = compile_sexpr (precedents, derefs) e in
-      ((precedents, derefs), T.ESimple e)
+      let e = compile_sexpr e in
+      (precedents, T.ESimple (false, e))
   | S.EApply (func, args) ->
-      let (precedents, derefs), func =
-        compile_sexpr (precedents, derefs) func
-      in
-      let (precedents, derefs), args =
-        List.fold_left_map compile_sexpr (precedents, derefs) args
-      in
-      ((precedents, derefs), T.EApply (func, args))
+      let func = compile_sexpr func in
+      let args = args |> List.map compile_sexpr in
+      (precedents, T.EApply (func, args))
   | S.EApplyNoStream (func, args) ->
-      let (precedents, derefs), args =
-        List.fold_left_map compile_sexpr (precedents, derefs) args
-      in
-      ((precedents, derefs), T.EApplyNoStream (func, args))
+      let args = args |> List.map compile_sexpr in
+      (precedents, T.EApplyNoStream (func, args))
   | S.EPre stream -> (
     match List.assoc_opt stream precedents with
     | None ->
-        let var = fresh_ident () in
+        let var = sprintf "__pre_%s" stream in
         let precedents = (stream, var) :: precedents in
-        ((precedents, derefs), T.ESimple (EVar var))
+        (precedents, T.ESimple (true, EVar var))
     | Some var ->
-        ((precedents, derefs), T.ESimple (EVar var)) )
+        (precedents, T.ESimple (true, EVar var)) )
 
 let compile_node
     S.
@@ -68,20 +45,16 @@ let compile_node
       ; local_var: ident list
       ; assignments: (ident * expr) list
       ; return: ident } =
-  let (precedents, derefs), assignments =
+  let precedents, assignments =
     List.fold_left_map
-      (fun (precedents, derefs) (ident, expr) ->
-        let (precedents, derefs), nexpr =
-          compile_expr args local_var (precedents, derefs) expr
-        in
-        ((precedents, derefs), (ident, nexpr)) )
-      ([], []) assignments
+      (fun precedents (ident, expr) ->
+        let precedents, nexpr = compile_expr args local_var precedents expr in
+        (precedents, (ident, nexpr)) )
+      [] assignments
   in
-  printf "nb derefs = %d\n" (List.length derefs) ;
-  let derefs = derefs |> List.map (fun (stream, var) -> T.{stream; var}) in
   let precedents =
     precedents |> List.map (fun (stream, var) -> T.{stream; var})
   in
-  T.{args; local_var; derefs; precedents; assignments; return}
+  T.{args; local_var; precedents; assignments; return}
 
 let equal (a : unit) = ( = ) a
