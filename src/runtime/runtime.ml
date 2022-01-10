@@ -25,6 +25,8 @@ let apply f arg =
   | Value f ->
       Value (f arg)
 
+let iter f = function UnInit -> () | Skipped -> () | Value v -> f v
+
 let join frame =
   match frame with
   | UnInit ->
