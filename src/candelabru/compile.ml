@@ -44,7 +44,7 @@ let compile_expr =
     | ENotStream e ->
         (None, framed @@ e_prim (Mocaml.Primitive.Parsed e))
   in
-  let framed_simple e = framed_if (compile_simple e) in
+  let _framed_simple e = framed_if (compile_simple e) in
   let compile_apply func_is_frame func arg =
     let apply =
       if func_is_frame then frame_apply else fun func arg -> e_app func [arg]
@@ -64,8 +64,8 @@ let compile_expr =
   | EIf (cond, e1, e2) -> (
       ( []
       , let frame_ident_cond, cond = compile_simple cond in
-        let e1 = framed_simple e1 in
-        let e2 = framed_simple e2 in
+        let (_,e1) = compile_simple e1 in
+        let (_,e2) = compile_simple e2 in
         match frame_ident_cond with
         | Some ident ->
             frame_bind ident cond (e_if (e_var ident) e1 e2)

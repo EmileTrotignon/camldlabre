@@ -81,7 +81,6 @@ let order_eqs domain eqs =
   let deps = String.Map.map (fv_expr domain) eqs in
   let deps_G = String.Graph.of_map deps in
   assert (not @@ String.Graph.Dfs.has_cycle deps_G) ;
-  printf "nb vertex : %d\n" (String.Graph.nb_vertex deps_G) ;
   let ( let* ) = Fun.flip Option.map in
   String.Graph.Topological.fold List.cons deps_G []
   |> List.filter_map (fun ident ->
@@ -89,11 +88,9 @@ let order_eqs domain eqs =
          (ident, rhs) )
 
 let compile_node S.{args; equations; return} =
-  printf "n equations = %d\n" (String.Map.size equations) ;
   let equations = String.Map.fold compile_equation equations String.Map.empty in
   let left_hand_side = String.Map.domain equations in
   let local_var = String.Set.elements left_hand_side in
-  printf "nb local_var : %d\n" (List.length local_var) ;
   let assignments = order_eqs left_hand_side equations in
   T.{args; local_var; assignments; return}
 
