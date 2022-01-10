@@ -46,11 +46,18 @@ let compile_expr =
   in
   let framed_simple e = framed_if (compile_simple e) in
   let compile_apply func_is_frame func arg =
-    let _arg_ident, arg = compile_simple arg in
     let apply =
       if func_is_frame then frame_apply else fun func arg -> e_app func [arg]
     in
-    let arg = fun_unit arg in
+    let arg =
+      match arg with
+      | EVar ident ->
+          e_var ident
+      | ENotStream expr ->
+          fun_unit (framed @@ e_prim (Mocaml.Primitive.Parsed expr))
+      | EDeref ident ->
+          fun_unit (e_deref (e_var ident))
+    in
     apply func arg
   in
   function

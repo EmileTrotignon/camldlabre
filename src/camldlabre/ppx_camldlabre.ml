@@ -5,6 +5,17 @@ let name = "node"
 
 let pexp_simple_fun pat body = Ast_pattern.(pexp_fun nolabel none pat body)
 
+(* let rec pexp_mult_fun body =
+  Ast_pattern.(
+    map ~f:(fun a1 -> []) nil
+    ||| map'
+          ~f:(fun loc a1 x xs ->
+            let vs = parse body loc xs in
+            let v = parse (pexp_mult_fun body a1 ) loc in
+            x ^:: xs )
+          __
+        ^:: __) *)
+
 let pattern_nostream p =
   Ast_pattern.(
     pexp_extension (extension (string "nostream") (single_expr_payload p)))
