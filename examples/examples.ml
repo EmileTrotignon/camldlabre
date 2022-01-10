@@ -116,31 +116,46 @@ let%node summed "" =
        !x
 *)
 
-let%node if_test "" =
+let%node if_test1 "" =
+  let x = [%nostream value ~default:true (alternator ())]
+  and y = if x then [%nostream 4] else [%nostream 5] in
+  y
+
+(* code généré pour if_test1
+   let if_test1 =
+   let x = ref Runtime.UnInit in
+   let y = ref Runtime.UnInit in
+   fun () ->
+     x := Runtime.Value (value ~default:true (alternator ())) ;
+     y :=
+       Runtime.bind (fun x -> if x then Runtime.Value 4 else Runtime.Value 5) !x ;
+     !y
+*)
+let%node if_test2 "" =
   let x = fby [%nostream true] [%nostream_apply not (pre x)]
   and y = if x then [%nostream 4] else [%nostream 5] in
   y
 
-(* code généré pour if_test 
-let if_test =
-  let __lampadario_fv_6 = ref Runtime.UnInit in
-  let __lampadario_fv_7 = ref Runtime.UnInit in
-  let x = ref Runtime.UnInit in
-  let y = ref Runtime.UnInit in
-  let __candelabru_fv_5 =
-    fby (fun () -> Runtime.Value true) (fun () -> !__lampadario_fv_6)
-  in
-  fun () ->
-    let __pre_x = !x in
-    __lampadario_fv_7 := __pre_x ;
-    __lampadario_fv_6 :=
-      Runtime.map
-        (fun __lampadario_fv_7 -> not __lampadario_fv_7)
-        !__lampadario_fv_7 ;
-    x := __candelabru_fv_5 () ;
-    y :=
-      Runtime.bind (fun x -> if x then Runtime.Value 4 else Runtime.Value 5) !x ;
-    !y
+(* code généré pour if_test2
+   let if_test2 =
+     let __lampadario_fv_6 = ref Runtime.UnInit in
+     let __lampadario_fv_7 = ref Runtime.UnInit in
+     let x = ref Runtime.UnInit in
+     let y = ref Runtime.UnInit in
+     let __candelabru_fv_5 =
+       fby (fun () -> Runtime.Value true) (fun () -> !__lampadario_fv_6)
+     in
+     fun () ->
+       let __pre_x = !x in
+       __lampadario_fv_7 := __pre_x ;
+       __lampadario_fv_6 :=
+         Runtime.map
+           (fun __lampadario_fv_7 -> not __lampadario_fv_7)
+           !__lampadario_fv_7 ;
+       x := __candelabru_fv_5 () ;
+       y :=
+         Runtime.bind (fun x -> if x then Runtime.Value 4 else Runtime.Value 5) !x ;
+       !y
 *)
 
 let print_bool b = print_string (if b then "true" else "false")
@@ -180,8 +195,14 @@ let () =
   done ;
   print_newline () ;
   print_string
-    "Test de if_test \n resultat attendu : 4545454545 ...\n resultat obtenu : " ;
+    "Test de if_test1 \n resultat attendu : 4545454545 ...\n resultat obtenu : " ;
   for _ = 0 to 9 do
-    ignore (map print_int (if_test ()))
+    ignore (map print_int (if_test1 ()))
+  done ;
+  print_newline () ;
+  print_string
+    "Test de if_test2 \n resultat attendu : 4545454545 ...\n resultat obtenu : " ;
+  for _ = 0 to 9 do
+    ignore (map print_int (if_test2 ()))
   done ;
   print_newline ()
