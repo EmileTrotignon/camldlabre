@@ -127,7 +127,7 @@ and expr e =
     | ELet (defs, e) ->
         group (space_list def defs) ^-^ expr e
     | EApp (f, named_args, args) ->
-        expr f
+        parens (expr f)
         ^-^ space_list named_arg named_args
         ^-^ space_list (parens @> expr) args
     | ECons (cons, args) ->

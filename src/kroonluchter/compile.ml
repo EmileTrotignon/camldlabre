@@ -30,14 +30,18 @@ let compile_expr arguments local_var precedents =
   | S.EApplyNoStream (func, args) ->
       let args = args |> List.map compile_sexpr in
       (precedents, T.EApplyNoStream (func, args))
-  | S.EPre stream -> (
-    match List.assoc_opt stream precedents with
-    | None ->
-        let var = sprintf "__pre_%s" stream in
-        let precedents = (stream, var) :: precedents in
-        (precedents, T.ESimple (true, EVar var))
-    | Some var ->
-        (precedents, T.ESimple (true, EVar var)) )
+  | S.EPre simple -> (
+    match simple with
+    | S.EVar stream -> (
+      match List.assoc_opt stream precedents with
+      | None ->
+          let var = sprintf "__pre_%s" stream in
+          let precedents = (stream, var) :: precedents in
+          (precedents, T.ESimple (true, EVar var))
+      | Some var ->
+          (precedents, T.ESimple (true, EVar var)) )
+    | S.ENotStream _e ->
+        failwith "Cannot use [pre] on a [%nostream ] node." )
 
 let compile_node
     S.

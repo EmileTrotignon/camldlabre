@@ -5,17 +5,6 @@ let name = "node"
 
 let pexp_simple_fun pat body = Ast_pattern.(pexp_fun nolabel none pat body)
 
-(* let rec pexp_mult_fun body =
-  Ast_pattern.(
-    map ~f:(fun a1 -> []) nil
-    ||| map'
-          ~f:(fun loc a1 x xs ->
-            let vs = parse body loc xs in
-            let v = parse (pexp_mult_fun body a1 ) loc in
-            x ^:: xs )
-          __
-        ^:: __) *)
-
 let pattern_nostream p =
   Ast_pattern.(
     pexp_extension (extension (string "nostream") (single_expr_payload p)))
@@ -37,10 +26,10 @@ let rec pattern_lampadario_expr () =
             Lampadario.Ast.EIf (rec_parse cond, rec_parse e1, rec_parse e2) )
           (pexp_ifthenelse __ __ (some __))
     ||| map
-          ~f:(fun _ ident -> Lampadario.Ast.EPre ident)
+          ~f:(fun _ e -> Lampadario.Ast.EPre (rec_parse e))
           (pexp_apply
              (pexp_ident (lident @@ string "pre"))
-             (pair nolabel (pexp_ident (lident __)) ^:: nil) )
+             (pair nolabel __ ^:: nil) )
     ||| map
           ~f:(fun _ f args ->
             Lampadario.Ast.EApply (rec_parse f, List.map rec_parse args) )
@@ -57,11 +46,39 @@ let rec pattern_lampadario_expr () =
               (Selected_ast.To_ocaml.copy_expression expr) )
           (pattern_nostream __))
 
+let pattern_lampadario_body =
+  Ast_pattern.(
+    map
+      ~f:(fun _a equations return -> (equations, return))
+      (pexp_let nonrecursive
+         (many
+            (map
+               ~f:(fun _a ident expr -> (ident, expr))
+               (value_binding ~pat:(ppat_var __) ~expr:__) ) )
+         (pexp_ident (lident __)) ))
+
+let rec pattern_lampadario_args () =
+  Ast_pattern.(
+    let rec_parse expr =
+      parse (pattern_lampadario_args ()) expr.pexp_loc expr ()
+    in
+    map
+      ~f:(fun () arg expr ->
+        let args, expr = rec_parse expr in
+        (arg :: args, expr) )
+      (pexp_simple_fun (ppat_var __) __)
+    ||| map
+          ~f:(fun () expr ->
+            ([], parse pattern_lampadario_body expr.pexp_loc expr ()) )
+          __)
+
 let pattern_lampadario_node =
   Ast_pattern.(
     map
-      ~f:(fun _ name args _ equations return ->
-        let args = if args = "" then [] else String.split_on_char ' ' args in
+      ~f:(fun _ name expr ->
+        let args, (equations, return) =
+          parse (pattern_lampadario_args ()) expr.pexp_loc expr ()
+        in
         let equations =
           equations
           |> List.map (fun (ident, expr) ->
@@ -73,17 +90,7 @@ let pattern_lampadario_node =
         (name, Lampadario.Ast.{args; return; equations}) )
       (pstr
          ( pstr_value nonrecursive
-             ( value_binding ~pat:(ppat_var __)
-                 ~expr:
-                   (pexp_simple_fun
-                      (ppat_constant (pconst_string __ __ none))
-                      (pexp_let nonrecursive
-                         (many
-                            (map
-                               ~f:(fun _ ident expr -> (ident, expr))
-                               (value_binding ~pat:(ppat_var __) ~expr:__) ) )
-                         (pexp_ident (lident __)) ) )
-             ^:: nil )
+             (value_binding ~pat:(ppat_var __) ~expr:__ ^:: nil)
          ^:: nil ) ))
 
 let expand ~loc ~path:_ si =

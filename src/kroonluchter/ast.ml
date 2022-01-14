@@ -10,7 +10,7 @@ type simple_expr = EVar of ident | ENotStream of Parsetree.expression
 type expr =
   | EIf of simple_expr * simple_expr * simple_expr
   | ESimple of simple_expr
-  | EPre of ident
+  | EPre of simple_expr
   | EApply of simple_expr * simple_expr list
   | EApplyNoStream of Parsetree.expression * simple_expr list
 

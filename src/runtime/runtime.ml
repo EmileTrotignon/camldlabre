@@ -27,6 +27,16 @@ let apply f arg =
 
 let iter f = function UnInit -> () | Skipped -> () | Value v -> f v
 
+let to_string ~f = function UnInit -> "." | Skipped -> "_" | Value v -> f v
+
+let print ~f = function
+  | UnInit ->
+      print_string "."
+  | Skipped ->
+      print_string "_"
+  | Value v ->
+      f v
+
 let join frame =
   match frame with
   | UnInit ->

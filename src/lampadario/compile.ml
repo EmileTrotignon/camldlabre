@@ -45,8 +45,9 @@ and compile_expr (eqs : 'a String.Map.t) expr =
   | S.EApplyNoStream (func, args) ->
       let eqs, args = List.fold_left_map compile_subexpr eqs args in
       (eqs, T.EApplyNoStream (func, args))
-  | S.EPre ident ->
-      (eqs, T.EPre ident)
+  | S.EPre e ->
+      let eqs, e = compile_subexpr eqs e in
+      (eqs, T.EPre e)
 
 let compile_equation name expr eqs =
   let eqs, expr = compile_expr eqs expr in

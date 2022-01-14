@@ -64,8 +64,8 @@ let compile_expr =
   | EIf (cond, e1, e2) -> (
       ( []
       , let frame_ident_cond, cond = compile_simple cond in
-        let (_,e1) = compile_simple e1 in
-        let (_,e2) = compile_simple e2 in
+        let _, e1 = compile_simple e1 in
+        let _, e2 = compile_simple e2 in
         match frame_ident_cond with
         | Some ident ->
             frame_bind ident cond (e_if (e_var ident) e1 e2)
@@ -88,24 +88,31 @@ let compile_expr =
             assert false
         | arg :: args ->
             let func = e_prim (Mocaml.Primitive.Parsed func) in
-            let get_ident = function
-              | EDeref ident ->
-                  ident
-              | _ ->
-                  assert false
+            let get_bound = function
+              | EVar ident | EDeref ident ->
+                  e_var ident
+              | ENotStream e ->
+                  e_prim (Mocaml.Primitive.Parsed e)
             in
-            List.fold_left
-              (fun expr arg ->
-                let arg_ident, arg = compile_simple arg in
-                let arg_ident = Option.get arg_ident in
-                frame_bind arg_ident arg expr )
-              (let arg_ident, arg = compile_simple arg in
-               let arg_ident = Option.get arg_ident in
-               frame_map arg_ident arg
-                 (e_app func
-                    ( e_var arg_ident
-                    :: (args |> List.map get_ident |> List.map e_var) ) ) )
-              args ) )
+            let bind_arg map expr arg =
+              let bind = if map then frame_map else frame_bind in
+              match arg with
+              | EVar ident ->
+                  (false, bind ident (e_var ident) expr)
+              | EDeref ident ->
+                  (false, bind ident (e_deref (e_var ident)) expr)
+              | ENotStream _e ->
+                  (map, expr)
+            in
+            let unmapped, expr =
+              List.fold_left
+                (fun (map, expr) arg -> bind_arg map expr arg)
+                (bind_arg true
+                   (e_app func (arg :: args |> List.map get_bound))
+                   arg )
+                args
+            in
+            if unmapped then framed expr else expr ) )
   | EApply (func, args) -> (
     match args with
     | [] ->
